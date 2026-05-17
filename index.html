@@ -1,0 +1,205 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>3D Everything</title>
+  <style>
+    :root {
+      --ink: #18140f;
+      --paper: #efe2c9;
+      --rust: #8d2419;
+      --line: rgba(54, 38, 24, 0.22);
+      --panel: rgba(255, 249, 237, 0.72);
+      --shadow: 0 22px 70px rgba(42, 27, 10, 0.25);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "Bahnschrift", "Arial Narrow", "Noto Sans SC", sans-serif;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(255,255,255,.7), transparent 28%),
+        linear-gradient(135deg, #f7edd9 0%, #d9c198 100%);
+    }
+    .grain {
+      min-height: 100vh;
+      padding: 24px clamp(14px, 4vw, 48px);
+      background-image: linear-gradient(rgba(90,60,25,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(90,60,25,.05) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+    header {
+      max-width: 1120px;
+      margin: 0 auto 18px;
+      display: grid;
+      gap: 8px;
+    }
+    .eyebrow {
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: var(--rust);
+      font-weight: 800;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(42px, 9vw, 110px);
+      line-height: .84;
+      letter-spacing: -.06em;
+      text-transform: uppercase;
+    }
+    .hero {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    .card {
+      min-height: 235px;
+      padding: clamp(16px, 3vw, 28px);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      position: relative;
+    }
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: auto -20% -35% 20%;
+      height: 130px;
+      background: radial-gradient(circle, rgba(141,36,25,.24), transparent 65%);
+      pointer-events: none;
+    }
+    .num {
+      font-size: 13px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      font-weight: 900;
+      color: var(--rust);
+    }
+    .tagline {
+      display: inline-flex;
+      width: fit-content;
+      margin-bottom: 6px;
+      padding: 4px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 248, 232, .58);
+      color: var(--rust);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .06em;
+    }
+    h2 {
+      margin: 14px 0;
+      font-size: clamp(28px, 4vw, 52px);
+      line-height: .94;
+      letter-spacing: -.04em;
+    }
+    p {
+      font-family: "Noto Sans SC", "Yu Gothic", sans-serif;
+      margin: 0;
+      line-height: 1.55;
+      font-size: 14px;
+      max-width: 560px;
+    }
+    a.choice {
+      margin-top: 18px;
+      width: fit-content;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 15px;
+      border-radius: 999px;
+      background: #15120d;
+      color: #fff7e8;
+      text-decoration: none;
+      font-weight: 900;
+      letter-spacing: .04em;
+      position: relative;
+      z-index: 1;
+    }
+    .choice.alt { background: var(--rust); }
+    .choice.vr { background: #0f4f5d; }
+    .vr-card::after {
+      background: radial-gradient(circle, rgba(15,79,93,.28), transparent 65%);
+    }
+    footer {
+      max-width: 1120px;
+      margin: 20px auto 0;
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      opacity: .78;
+    }
+    footer a { color: var(--ink); }
+    @media (max-width: 960px) {
+      .hero { grid-template-columns: 1fr; }
+      .grain { padding-top: 18px; }
+      header { margin-bottom: 12px; }
+      .card {
+        min-height: 0;
+        border-radius: 18px;
+        padding: 14px 16px;
+      }
+      h2 { margin: 8px 0; }
+      a.choice { margin-top: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="grain">
+    <header>
+      <div class="eyebrow">star-style-studio.net / visual tools</div>
+      <h1>3D Everything</h1>
+      <p>请上传照片，生成2D/3D/360全景图，各页有精品图库。</p>
+    </header>
+    <section class="hero" aria-label="3D Everything choices">
+      <article class="card">
+        <div>
+          <div class="num">01 / Anatomy plate</div>
+          <h2>3D 解剖图</h2>
+          <div class="tagline">精品图库</div>
+          <p>生成机械解剖图，可保存2D图。</p>
+        </div>
+        <a class="choice" href="./index2.html">进入 3D 解剖图 →</a>
+      </article>
+      <article class="card">
+        <div>
+          <div class="num">02 / Image to GLB</div>
+          <h2>3D 模型图</h2>
+          <div class="tagline">精品图库</div>
+          <p>生成3D模型，可保存2D图。</p>
+        </div>
+        <a class="choice alt" href="/3Dview/">进入 3D模型图 →</a>
+      </article>
+      <article class="card vr-card">
+        <div>
+          <div class="num">03 / 360 Panorama VR</div>
+          <h2>3D-VR</h2>
+          <div class="tagline">精品图库</div>
+          <p>生成360全景图，可保存2D图。</p>
+        </div>
+        <a class="choice vr" href="./index3.html">进入 3D-VR →</a>
+      </article>
+    </section>
+    <footer>
+      <span>© Star Style Studio</span>
+      <a href="./policy.html">Policy</a>
+      <a href="./privacy.html">Privacy</a>
+      <a href="./index2.html#terms">Terms</a>
+      <a href="./index3.html">3D-VR</a>
+    </footer>
+  </main>
+</body>
+</html>

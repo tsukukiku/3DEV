@@ -1,0 +1,560 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>3D Everything / Anatomy</title>
+  <style>
+    :root {
+      --ink: #1a1510;
+      --muted: #665845;
+      --paper: #ead9ba;
+      --panel: rgba(255, 248, 232, .84);
+      --rust: #8e2118;
+      --dark: #14100c;
+      --line: rgba(60, 42, 24, .22);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Bahnschrift", "Arial Narrow", "Noto Sans SC", sans-serif;
+      background:
+        radial-gradient(circle at 70% 10%, rgba(255,255,255,.64), transparent 25%),
+        linear-gradient(135deg, #f5ead6, #cdb58b);
+      overflow-x: hidden;
+    }
+    .page {
+      min-height: 100vh;
+      padding: 22px clamp(14px, 3vw, 46px) 28px;
+      background-image: linear-gradient(rgba(96,70,38,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(96,70,38,.06) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .brand {
+      font-size: clamp(34px, 7vw, 86px);
+      line-height: .86;
+      letter-spacing: -.06em;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .brand span { color: var(--rust); }
+    .back {
+      color: #fff8e9;
+      background: var(--dark);
+      border-radius: 999px;
+      padding: 10px 14px;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(270px, 390px) minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: 0 18px 60px rgba(45, 30, 12, .2);
+      padding: 16px;
+      backdrop-filter: blur(10px);
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 900;
+      margin: 12px 0 6px;
+    }
+    input, textarea, select, button {
+      font: inherit;
+    }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 252, 243, .82);
+      color: var(--ink);
+      padding: 10px 11px;
+      outline: none;
+    }
+    textarea {
+      min-height: 92px;
+      resize: vertical;
+      font-family: "Noto Sans SC", sans-serif;
+      line-height: 1.55;
+    }
+    .preview {
+      min-height: 160px;
+      border: 1px dashed rgba(70, 45, 20, .35);
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--muted);
+      background: rgba(255, 255, 255, .28);
+    }
+    .preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .result-card {
+      margin-top: 12px;
+      min-height: 120px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: rgba(255, 255, 255, .24);
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+    }
+    .result-card img {
+      width: 100%;
+      display: block;
+    }
+    .actions {
+      margin-top: 14px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    button {
+      border: 0;
+      border-radius: 999px;
+      background: var(--dark);
+      color: #fff7e6;
+      padding: 11px 14px;
+      cursor: pointer;
+      font-weight: 900;
+    }
+    button.secondary { background: var(--rust); }
+    .status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .passcode-row {
+      display: grid;
+      grid-template-columns: minmax(120px, 180px) 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+    .limit-note {
+      color: var(--rust);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .02em;
+      white-space: nowrap;
+    }
+    .gallery {
+      display: grid;
+      gap: 16px;
+    }
+    .scroller {
+      overflow: hidden;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: rgba(20, 16, 12, .08);
+    }
+    .track {
+      display: flex;
+      gap: 14px;
+      width: max-content;
+      padding: 14px;
+      animation: drift 70s linear infinite;
+    }
+    .track:hover { animation-play-state: paused; }
+    .plate {
+      width: min(78vw, 760px);
+      aspect-ratio: 16 / 10;
+      object-fit: contain;
+      border-radius: 16px;
+      box-shadow: 0 14px 36px rgba(40, 25, 10, .28);
+      background: #d8c19c;
+      cursor: zoom-in;
+    }
+    .hd-viewer {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: none;
+      padding: clamp(12px, 3vw, 34px);
+      background: rgba(16, 12, 8, .82);
+      backdrop-filter: blur(10px);
+    }
+    .hd-viewer.open {
+      display: grid;
+      place-items: center;
+    }
+    .hd-frame {
+      width: min(96vw, 1380px);
+      max-height: 92vh;
+      display: grid;
+      gap: 10px;
+    }
+    .hd-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      color: #fff8e8;
+      font-weight: 900;
+    }
+    .hd-toolbar button {
+      padding: 9px 13px;
+      background: #fff8e8;
+      color: var(--ink);
+    }
+    .hd-image {
+      width: 100%;
+      max-height: 86vh;
+      object-fit: contain;
+      border-radius: 18px;
+      background: #d8c19c;
+      box-shadow: 0 22px 80px rgba(0, 0, 0, .38);
+    }
+    @keyframes drift {
+      from { transform: translateX(0); }
+      to { transform: translateX(calc(-50%)); }
+    }
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      background: rgba(255, 250, 238, .76);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 9px 12px;
+      font-size: 13px;
+    }
+    .chip.active {
+      background: var(--rust);
+      color: #fff7e8;
+      border-color: transparent;
+    }
+    .prompt-box {
+      font-family: "Consolas", "Noto Sans Mono", monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      color: #332719;
+      white-space: pre-wrap;
+    }
+    footer {
+      margin-top: 26px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    footer a { color: var(--ink); }
+    @media (max-width: 860px) {
+      .layout { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; }
+      .plate { width: 86vw; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div class="brand">3D <span>Anatomy</span></div>
+      <a class="back" href="./index.html">← 3D Everything</a>
+    </div>
+
+    <section class="layout">
+      <aside class="panel">
+        <label>分类</label>
+        <div class="chips" id="categoryChips">
+          <button class="chip active" data-category="aircraft">飞机</button>
+          <button class="chip" data-category="ship">轮船</button>
+          <button class="chip" data-category="vehicle">车辆</button>
+          <button class="chip" data-category="machine">器械</button>
+        </div>
+
+        <label for="objectName">型号说明</label>
+        <input id="objectName" placeholder="例如：Mitsubishi A6M Zero / BF109 / steam engine" />
+
+        <label for="anatomyPasscode">口令</label>
+        <div class="passcode-row">
+          <input id="anatomyPasscode" type="password" placeholder="ANATOMY" autocomplete="off" />
+          <div class="limit-note">每IP每日3回</div>
+        </div>
+
+        <label>上传物体照片</label>
+        <input id="imageInput" type="file" accept="image/*" />
+        <div class="preview" id="preview">上传后显示预览</div>
+
+        <label for="extraPrompt">补充要求</label>
+        <textarea id="extraPrompt" placeholder="可选：颜色、年代、标注语言、是否需要中英双语等"></textarea>
+
+        <div class="actions">
+          <button id="btnBuildPrompt">生成预设 Prompt</button>
+          <button class="secondary" id="btnSubmit">提交给 AI模型</button>
+        </div>
+        <div class="status" id="status">默认展示：二战名机机械解剖图。</div>
+        <div class="result-card" id="resultCard">生成结果将在这里显示</div>
+      </aside>
+
+      <section class="gallery">
+        <div class="scroller" aria-label="二战名机机械解剖图慢速滚动展示">
+          <div class="track">
+            <img class="plate" src="./assets/anatomy-light/mitsubishi-a6m-zero.webp" data-hd="./assets/anatomy/mitsubishi-a6m-zero.png" data-title="Mitsubishi A6M Zero" alt="Mitsubishi A6M Zero anatomy plate" />
+            <img class="plate" src="./assets/anatomy-light/yakovlev-yak-3.webp" data-hd="./assets/anatomy/yakovlev-yak-3.png" data-title="Yakovlev Yak-3" alt="Yakovlev Yak-3 anatomy plate" />
+            <img class="plate" src="./assets/anatomy-light/p-51d-mustang.webp" data-hd="./assets/anatomy/p-51d-mustang.png" data-title="P-51D Mustang" alt="P-51D Mustang anatomy plate" />
+            <img class="plate" src="./assets/anatomy-light/messerschmitt-bf110.webp" data-hd="./assets/anatomy/messerschmitt-bf110.png" data-title="Messerschmitt BF110" alt="Messerschmitt BF110 anatomy plate" />
+            <img class="plate" src="./assets/anatomy-light/messerschmitt-bf109.webp" data-hd="./assets/anatomy/messerschmitt-bf109.png" data-title="Messerschmitt BF109" alt="Messerschmitt BF109 anatomy plate" />
+            <img class="plate" src="./assets/anatomy-light/mitsubishi-a6m-zero.webp" data-hd="./assets/anatomy/mitsubishi-a6m-zero.png" data-title="Mitsubishi A6M Zero" alt="" />
+            <img class="plate" src="./assets/anatomy-light/yakovlev-yak-3.webp" data-hd="./assets/anatomy/yakovlev-yak-3.png" data-title="Yakovlev Yak-3" alt="" />
+            <img class="plate" src="./assets/anatomy-light/p-51d-mustang.webp" data-hd="./assets/anatomy/p-51d-mustang.png" data-title="P-51D Mustang" alt="" />
+            <img class="plate" src="./assets/anatomy-light/messerschmitt-bf110.webp" data-hd="./assets/anatomy/messerschmitt-bf110.png" data-title="Messerschmitt BF110" alt="" />
+            <img class="plate" src="./assets/anatomy-light/messerschmitt-bf109.webp" data-hd="./assets/anatomy/messerschmitt-bf109.png" data-title="Messerschmitt BF109" alt="" />
+          </div>
+        </div>
+
+        <article class="panel">
+          <label>当前 AI模型 预设 Prompt</label>
+          <div class="prompt-box" id="promptBox"></div>
+        </article>
+      </section>
+    </section>
+
+    <div class="hd-viewer" id="hdViewer" aria-hidden="true">
+      <div class="hd-frame">
+        <div class="hd-toolbar">
+          <span id="hdTitle">高清预览</span>
+          <button id="hdClose" type="button">关闭</button>
+        </div>
+        <img class="hd-image" id="hdImage" alt="高清机械解剖图预览" />
+      </div>
+    </div>
+
+    <footer id="terms">
+      <span>© Star Style Studio</span>
+      <a href="./policy.html">Policy</a>
+      <a href="./privacy.html">Privacy</a>
+      <span>用户需确保上传图片拥有使用权；生成图仅用于合法展示、设计和研究用途。</span>
+    </footer>
+  </main>
+
+  <script>
+    const imageInput = document.getElementById('imageInput');
+    const preview = document.getElementById('preview');
+    const objectName = document.getElementById('objectName');
+    const passcode = document.getElementById('anatomyPasscode');
+    const extraPrompt = document.getElementById('extraPrompt');
+    const promptBox = document.getElementById('promptBox');
+    const statusEl = document.getElementById('status');
+    const resultCard = document.getElementById('resultCard');
+    const btnBuildPrompt = document.getElementById('btnBuildPrompt');
+    const btnSubmit = document.getElementById('btnSubmit');
+    const hdViewer = document.getElementById('hdViewer');
+    const hdImage = document.getElementById('hdImage');
+    const hdTitle = document.getElementById('hdTitle');
+    const hdClose = document.getElementById('hdClose');
+    const chips = document.querySelectorAll('[data-category]');
+    let category = 'aircraft';
+    let imagePayload = null;
+
+    const categoryText = {
+      aircraft: 'aircraft / airplane / aviation machine',
+      ship: 'ship / naval vessel / marine machine',
+      vehicle: 'vehicle / car / tank / transport machine',
+      machine: 'mechanical device / industrial machine / instrument'
+    };
+
+    function buildPrompt() {
+      const name = objectName.value.trim() || 'World War II aircraft';
+      const extra = extraPrompt.value.trim();
+      return [
+        `Create a premium mechanical cutaway anatomy poster for: ${name}.`,
+        `Object category: ${categoryText[category]}.`,
+        'Use the uploaded reference photo as the main visual reference.',
+        'Show a detailed exploded/cutaway structure with visible internal frame, engine, fuel tank, cockpit/control unit, structural ribs, mechanical linkages, and labeled parts.',
+        'Composition: vintage engineering poster, front 3/4 view, full object visible, centered, no cropping.',
+        'Style: highly detailed technical illustration, realistic metal texture, parchment background, fine red annotation lines, bilingual labels in English and Chinese.',
+        'Layout: large title at top left, specifications table, history box, variants/parts diagrams, clean readable labels.',
+        'Avoid fantasy parts, avoid unreadable text blocks, avoid distorted geometry.',
+        extra ? `Extra user request: ${extra}` : ''
+      ].filter(Boolean).join('\\n');
+    }
+
+    function updatePrompt() {
+      promptBox.textContent = buildPrompt();
+    }
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function loadImage(dataUrl) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = dataUrl;
+      });
+    }
+
+    function canvasToDataUrl(canvas, quality) {
+      return canvas.toDataURL('image/jpeg', quality);
+    }
+
+    async function shrinkImageToLimit(file, maxBytes = 5 * 1024 * 1024) {
+      const originalDataUrl = await readFileAsDataUrl(file);
+      if (file.size <= maxBytes) {
+        return {
+          dataUrl: originalDataUrl,
+          mimeType: file.type || 'image/jpeg',
+          bytes: file.size,
+          originalName: file.name
+        };
+      }
+
+      const img = await loadImage(originalDataUrl);
+      let width = img.naturalWidth;
+      let height = img.naturalHeight;
+      let quality = 0.88;
+      let dataUrl = originalDataUrl;
+
+      for (let i = 0; i < 10; i += 1) {
+        const scale = Math.min(1, Math.sqrt(maxBytes / Math.max(file.size, 1)) * Math.pow(0.86, i));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(640, Math.round(width * scale));
+        canvas.height = Math.max(640, Math.round(height * scale));
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        dataUrl = canvasToDataUrl(canvas, quality);
+        const approxBytes = Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75);
+        if (approxBytes <= maxBytes) {
+          return {
+            dataUrl,
+            mimeType: 'image/jpeg',
+            bytes: approxBytes,
+            originalName: file.name
+          };
+        }
+        quality = Math.max(0.55, quality - 0.08);
+      }
+
+      const approxBytes = Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75);
+      return {
+        dataUrl,
+        mimeType: 'image/jpeg',
+        bytes: approxBytes,
+        originalName: file.name
+      };
+    }
+
+    imageInput.addEventListener('change', async () => {
+      const file = imageInput.files && imageInput.files[0];
+      if (!file) return;
+      statusEl.textContent = '正在处理照片，必要时自动压缩到 5MB 以下...';
+      imagePayload = await shrinkImageToLimit(file);
+      preview.innerHTML = `<img src="${imagePayload.dataUrl}" alt="上传照片预览">`;
+      statusEl.textContent = `照片已选择：${Math.round(imagePayload.bytes / 1024)}KB`;
+    });
+
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        category = chip.dataset.category;
+        chips.forEach((item) => item.classList.toggle('active', item === chip));
+        updatePrompt();
+      });
+    });
+
+    objectName.addEventListener('input', updatePrompt);
+    extraPrompt.addEventListener('input', updatePrompt);
+    btnBuildPrompt.addEventListener('click', updatePrompt);
+
+    document.querySelectorAll('.plate[data-hd]').forEach((plate) => {
+      plate.addEventListener('click', () => {
+        hdImage.src = plate.dataset.hd;
+        hdTitle.textContent = `${plate.dataset.title || '高清预览'} / PNG`;
+        hdViewer.classList.add('open');
+        hdViewer.setAttribute('aria-hidden', 'false');
+      });
+    });
+
+    function closeHdViewer() {
+      hdViewer.classList.remove('open');
+      hdViewer.setAttribute('aria-hidden', 'true');
+      hdImage.removeAttribute('src');
+    }
+
+    hdClose.addEventListener('click', closeHdViewer);
+    hdViewer.addEventListener('click', (event) => {
+      if (event.target === hdViewer) closeHdViewer();
+    });
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && hdViewer.classList.contains('open')) closeHdViewer();
+    });
+
+    btnSubmit.addEventListener('click', async () => {
+      if (passcode.value.trim() !== 'ANATOMY') {
+        alert('请输入正确口令：ANATOMY');
+        return;
+      }
+      if (!imagePayload) {
+        alert('请先上传物体照片');
+        return;
+      }
+      statusEl.textContent = '正在提交给 AI模型...';
+      try {
+        const response = await fetch('/gpt-api/anatomy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            passcode: 'ANATOMY',
+            category,
+            objectName: objectName.value.trim(),
+            prompt: buildPrompt(),
+            image: imagePayload
+          })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+        statusEl.textContent = '已提交。后端返回结果后将在这里显示。';
+        if (data.imageUrl || data.url) {
+          const imageUrl = data.imageUrl || data.url;
+          resultCard.innerHTML = `<img src="${imageUrl}" alt="生成的机械解剖图">`;
+        }
+      } catch (error) {
+        statusEl.textContent = `提交失败：${error.message}`;
+      }
+    });
+
+    updatePrompt();
+  </script>
+</body>
+</html>
+
+
