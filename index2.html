@@ -151,6 +151,23 @@
       color: var(--muted);
       line-height: 1.5;
     }
+    .status.loading {
+      color: var(--rust);
+      font-weight: 900;
+    }
+    .status.loading::after {
+      content: "";
+      display: inline-block;
+      width: 1.5em;
+      text-align: left;
+      animation: loadingDots 1.2s steps(4, end) infinite;
+    }
+    @keyframes loadingDots {
+      0% { content: ""; }
+      25% { content: "."; }
+      50% { content: ".."; }
+      75%, 100% { content: "..."; }
+    }
     .passcode-row {
       display: grid;
       grid-template-columns: minmax(120px, 180px) 1fr;
@@ -410,8 +427,37 @@
       ].filter(Boolean).join('\\n');
     }
 
+    function buildPresetPromptOnly() {
+      const name = objectName.value.trim() || 'World War II aircraft';
+      return [
+        `Create a premium mechanical cutaway anatomy poster for: ${name}.`,
+        `Object category: ${categoryText[category]}.`,
+        'Use the uploaded reference photo as the main visual reference.',
+        'Show a detailed cutaway structure with visible internal frame, main power unit, fuel/energy system, cockpit/control unit, structural ribs, mechanical linkages, support components, and labeled parts.',
+        categoryFocus[category],
+        'Composition: vintage engineering poster, front 3/4 view, full object visible, centered, no cropping.',
+        'Style: highly detailed technical illustration, realistic metal texture, parchment background, fine red annotation lines.',
+        'Layout: large title at top left, specifications table, history box, variants/parts diagrams, clean readable labels.',
+        'Labels: use short readable English and Chinese labels. Avoid fake letters, unreadable text, nonsense labels, fantasy parts, and distorted geometry.'
+      ].filter(Boolean).join('\\n');
+    }
+
     function updatePrompt() {
       promptBox.textContent = buildPrompt();
+    }
+
+    function setStatus(message, loading = false) {
+      statusEl.textContent = message;
+      statusEl.classList.toggle('loading', loading);
+    }
+
+    function appendPresetPromptToExtra() {
+      const preset = buildPresetPromptOnly();
+      const current = extraPrompt.value.trim();
+      extraPrompt.value = current ? `${current}\\n\\n${preset}` : preset;
+      extraPrompt.focus();
+      updatePrompt();
+      setStatus('预设 Prompt 已追加到补充要求栏。');
     }
 
     function readFileAsDataUrl(file) {
@@ -485,10 +531,10 @@
     imageInput.addEventListener('change', async () => {
       const file = imageInput.files && imageInput.files[0];
       if (!file) return;
-      statusEl.textContent = '正在处理照片，必要时自动压缩到 5MB 以下...';
+      setStatus('正在处理照片，必要时自动压缩到 5MB 以下', true);
       imagePayload = await shrinkImageToLimit(file);
       preview.innerHTML = `<img src="${imagePayload.dataUrl}" alt="上传照片预览">`;
-      statusEl.textContent = `照片已选择：${Math.round(imagePayload.bytes / 1024)}KB`;
+      setStatus(`照片已选择：${Math.round(imagePayload.bytes / 1024)}KB`);
     });
 
     chips.forEach((chip) => {
@@ -501,7 +547,7 @@
 
     objectName.addEventListener('input', updatePrompt);
     extraPrompt.addEventListener('input', updatePrompt);
-    btnBuildPrompt.addEventListener('click', updatePrompt);
+    btnBuildPrompt.addEventListener('click', appendPresetPromptToExtra);
 
     document.querySelectorAll('.plate[data-hd]').forEach((plate) => {
       plate.addEventListener('click', () => {
@@ -526,6 +572,22 @@
       if (event.key === 'Escape' && hdViewer.classList.contains('open')) closeHdViewer();
     });
 
+    async function waitForAnatomyJob(jobId) {
+      const startedAt = Date.now();
+      const maxMs = 12 * 60 * 1000;
+      while (Date.now() - startedAt < maxMs) {
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        const seconds = Math.floor((Date.now() - startedAt) / 1000);
+        const response = await fetch(`/gpt-api/anatomy-jobs/${encodeURIComponent(jobId)}`);
+        const job = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(job.error || `HTTP ${response.status}`);
+        setStatus(`AI模型生成中 ${job.progress || 10}% / ${seconds}秒`, true);
+        if (job.status === 'FINISHED') return job;
+        if (job.status === 'FAILED') throw new Error(job.error || 'AI模型生成失败');
+      }
+      throw new Error('生成时间过长，请稍后查看日志或重试');
+    }
+
     btnSubmit.addEventListener('click', async () => {
       if (passcode.value.trim() !== 'ANATOMY') {
         alert('请输入正确口令：ANATOMY');
@@ -535,7 +597,7 @@
         alert('请先上传物体照片');
         return;
       }
-      statusEl.textContent = '正在提交给 AI模型...';
+      setStatus('正在提交给 AI模型', true);
       try {
         const response = await fetch('/gpt-api/anatomy', {
           method: 'POST',
@@ -550,13 +612,14 @@
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
-        statusEl.textContent = '已提交。后端返回结果后将在这里显示。';
-        if (data.imageUrl || data.url) {
-          const imageUrl = data.imageUrl || data.url;
-          resultCard.innerHTML = `<img src="${imageUrl}" alt="生成的机械解剖图">`;
-        }
+        setStatus('已提交，AI模型生成中 0秒', true);
+        const job = data.jobId ? await waitForAnatomyJob(data.jobId) : data;
+        const imageUrl = job.imageUrl || job.publicImageUrl || job.url;
+        if (!imageUrl) throw new Error('生成完成，但没有返回图片地址');
+        resultCard.innerHTML = `<img src="${imageUrl}" alt="生成的机械解剖图">`;
+        setStatus('生成完成。');
       } catch (error) {
-        statusEl.textContent = `提交失败：${error.message}`;
+        setStatus(`提交失败：${error.message}`);
       }
     });
 
