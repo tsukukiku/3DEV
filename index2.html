@@ -386,6 +386,13 @@
       machine: 'mechanical device / industrial machine / instrument'
     };
 
+    const categoryFocus = {
+      aircraft: 'For aircraft, emphasize engine, cockpit, wing structure, fuselage frame, fuel tanks, landing gear, control surfaces, weapons or payload if present.',
+      ship: 'For ships, emphasize hull structure, deck layout, engine room, propeller shaft, rudder, fuel system, bridge, and internal compartments.',
+      vehicle: 'For vehicles, emphasize engine, drivetrain, suspension, chassis frame, fuel tank, cockpit/interior, wheels or tracks.',
+      machine: 'For machines, emphasize housing, motor or power unit, gears, shafts, controls, fasteners, wiring, and internal supports.'
+    };
+
     function buildPrompt() {
       const name = objectName.value.trim() || 'World War II aircraft';
       const extra = extraPrompt.value.trim();
@@ -393,12 +400,13 @@
         `Create a premium mechanical cutaway anatomy poster for: ${name}.`,
         `Object category: ${categoryText[category]}.`,
         'Use the uploaded reference photo as the main visual reference.',
-        'Show a detailed exploded/cutaway structure with visible internal frame, engine, fuel tank, cockpit/control unit, structural ribs, mechanical linkages, and labeled parts.',
+        'Show a detailed cutaway structure with visible internal frame, main power unit, fuel/energy system, cockpit/control unit, structural ribs, mechanical linkages, support components, and labeled parts.',
+        categoryFocus[category],
         'Composition: vintage engineering poster, front 3/4 view, full object visible, centered, no cropping.',
-        'Style: highly detailed technical illustration, realistic metal texture, parchment background, fine red annotation lines, bilingual labels in English and Chinese.',
+        'Style: highly detailed technical illustration, realistic metal texture, parchment background, fine red annotation lines.',
         'Layout: large title at top left, specifications table, history box, variants/parts diagrams, clean readable labels.',
-        'Avoid fantasy parts, avoid unreadable text blocks, avoid distorted geometry.',
-        extra ? `Extra user request: ${extra}` : ''
+        'Labels: use short readable English and Chinese labels. Avoid fake letters, unreadable text, nonsense labels, fantasy parts, and distorted geometry.',
+        extra ? `Additional user request: ${extra}` : ''
       ].filter(Boolean).join('\\n');
     }
 
