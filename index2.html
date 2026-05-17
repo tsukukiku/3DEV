@@ -482,9 +482,9 @@
       return canvas.toDataURL('image/jpeg', quality);
     }
 
-    async function shrinkImageToLimit(file, maxBytes = 5 * 1024 * 1024) {
+    async function shrinkImageToLimit(file, maxBytes = 1800 * 1024) {
       const originalDataUrl = await readFileAsDataUrl(file);
-      if (file.size <= maxBytes) {
+      if (file.size <= maxBytes && /^image\/jpe?g$/i.test(file.type || '')) {
         return {
           dataUrl: originalDataUrl,
           mimeType: file.type || 'image/jpeg',
@@ -531,7 +531,7 @@
     imageInput.addEventListener('change', async () => {
       const file = imageInput.files && imageInput.files[0];
       if (!file) return;
-      setStatus('正在处理照片，必要时自动压缩到 5MB 以下', true);
+      setStatus('正在处理照片，自动压缩到约 1.8MB 以下', true);
       imagePayload = await shrinkImageToLimit(file);
       preview.innerHTML = `<img src="${imagePayload.dataUrl}" alt="上传照片预览">`;
       setStatus(`照片已选择：${Math.round(imagePayload.bytes / 1024)}KB`);
@@ -619,8 +619,14 @@
             image: imagePayload
           })
         });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+        const text = await response.text();
+        let data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch (error) { data = {}; }
+        if (!response.ok) {
+          const cfMatch = text.match(/Error code\s*(\d{3})|<title>[^|<]*\|\s*(\d{3})/i);
+          const cfCode = cfMatch ? (cfMatch[1] || cfMatch[2]) : '';
+          throw new Error(data.error || (cfCode ? `Cloudflare ${cfCode}: Synology API 临时没有回应` : text.slice(0, 180) || `HTTP ${response.status}`));
+        }
         setStatus('已提交，AI模型生成中 0秒', true);
         const job = data.jobId ? await waitForAnatomyJob(data.jobId) : data;
         const imageUrl = job.imageUrl || job.publicImageUrl || job.url;
