@@ -196,7 +196,7 @@
       gap: 14px;
       width: max-content;
       padding: 14px;
-      animation: drift 70s linear infinite;
+      animation: drift 75s linear infinite;
     }
     .track:hover { animation-play-state: paused; }
     .plate {
@@ -277,6 +277,26 @@
       color: #332719;
       white-space: pre-wrap;
     }
+    .prompt-details {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 252, 243, .62);
+      padding: 9px 11px;
+    }
+    .prompt-details summary {
+      cursor: pointer;
+      color: #4a3926;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.5;
+    }
+    .prompt-details .prompt-box {
+      margin-top: 10px;
+      max-height: 330px;
+      overflow: auto;
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+    }
     footer {
       margin-top: 26px;
       padding-top: 14px;
@@ -344,17 +364,26 @@
             <img class="plate" src="./assets/anatomy-light/p-51d-mustang.webp" data-hd="./assets/anatomy/p-51d-mustang.png" data-title="P-51D Mustang" alt="P-51D Mustang anatomy plate" />
             <img class="plate" src="./assets/anatomy-light/messerschmitt-bf110.webp" data-hd="./assets/anatomy/messerschmitt-bf110.png" data-title="Messerschmitt BF110" alt="Messerschmitt BF110 anatomy plate" />
             <img class="plate" src="./assets/anatomy-light/messerschmitt-bf109.webp" data-hd="./assets/anatomy/messerschmitt-bf109.png" data-title="Messerschmitt BF109" alt="Messerschmitt BF109 anatomy plate" />
+            <img class="plate" src="./assets/anatomy-light/boeing-B-29.webp" data-hd="./assets/anatomy/boeing-B-29.png" data-title="Boeing B-29" alt="Boeing B-29 anatomy plate" />
+            <img class="plate" src="./assets/anatomy-light/M4 sherman.webp" data-hd="./assets/anatomy/M4 sherman.png" data-title="M4 Sherman" alt="M4 Sherman anatomy plate" />
+            <img class="plate" src="./assets/anatomy-light/T-34.webp" data-hd="./assets/anatomy/T-34.png" data-title="T-34" alt="T-34 anatomy plate" />
             <img class="plate" src="./assets/anatomy-light/mitsubishi-a6m-zero.webp" data-hd="./assets/anatomy/mitsubishi-a6m-zero.png" data-title="Mitsubishi A6M Zero" alt="" />
             <img class="plate" src="./assets/anatomy-light/yakovlev-yak-3.webp" data-hd="./assets/anatomy/yakovlev-yak-3.png" data-title="Yakovlev Yak-3" alt="" />
             <img class="plate" src="./assets/anatomy-light/p-51d-mustang.webp" data-hd="./assets/anatomy/p-51d-mustang.png" data-title="P-51D Mustang" alt="" />
             <img class="plate" src="./assets/anatomy-light/messerschmitt-bf110.webp" data-hd="./assets/anatomy/messerschmitt-bf110.png" data-title="Messerschmitt BF110" alt="" />
             <img class="plate" src="./assets/anatomy-light/messerschmitt-bf109.webp" data-hd="./assets/anatomy/messerschmitt-bf109.png" data-title="Messerschmitt BF109" alt="" />
+            <img class="plate" src="./assets/anatomy-light/boeing-B-29.webp" data-hd="./assets/anatomy/boeing-B-29.png" data-title="Boeing B-29" alt="" />
+            <img class="plate" src="./assets/anatomy-light/M4 sherman.webp" data-hd="./assets/anatomy/M4 sherman.png" data-title="M4 Sherman" alt="" />
+            <img class="plate" src="./assets/anatomy-light/T-34.webp" data-hd="./assets/anatomy/T-34.png" data-title="T-34" alt="" />
           </div>
         </div>
 
         <article class="panel">
           <label>当前 AI模型 预设 Prompt</label>
-          <div class="prompt-box" id="promptBox"></div>
+          <details class="prompt-details" id="promptDetails">
+            <summary id="promptSummary">预设提示词摘要</summary>
+            <div class="prompt-box" id="promptBox"></div>
+          </details>
         </article>
       </section>
     </section>
@@ -384,6 +413,7 @@
     const passcode = document.getElementById('anatomyPasscode');
     const extraPrompt = document.getElementById('extraPrompt');
     const promptBox = document.getElementById('promptBox');
+    const promptSummary = document.getElementById('promptSummary');
     const statusEl = document.getElementById('status');
     const resultCard = document.getElementById('resultCard');
     const btnBuildPrompt = document.getElementById('btnBuildPrompt');
@@ -393,10 +423,9 @@
     const hdTitle = document.getElementById('hdTitle');
     const hdClose = document.getElementById('hdClose');
     const chips = document.querySelectorAll('[data-category]');
-    const TEMPLATE_URL = './assets/anatomy-template/mechanical-poster-template.jpg';
     let category = 'aircraft';
     let imagePayload = null;
-    let templatePayload = null;
+    let presetInserted = false;
 
     const categoryText = {
       aircraft: 'aircraft / airplane / aviation machine',
@@ -412,34 +441,91 @@
       machine: 'For machines, emphasize housing, motor or power unit, gears, shafts, controls, fasteners, wiring, and internal supports.'
     };
 
-    function buildPrompt() {
-      const name = objectName.value.trim() || 'World War II aircraft';
-      const extra = extraPrompt.value.trim();
+    function buildAircraftPreset(name) {
       return [
-        `Create a premium mechanical cutaway anatomy poster for: ${name}.`,
-        `Object category: ${categoryText[category]}.`,
-        'Purpose: educational museum-style engineering illustration of a non-operational, demilitarized object.',
-        'Use the provided template image only as a color and layout reference: aged parchment background, black and deep red title typography, muted olive-gray mechanical colors, fine red annotation lines, boxed specification panels, and dense technical-poster composition.',
-        'Do not copy the template aircraft, markings, symbols, weapon labels, ammunition labels, or exact text content.',
-        'Use the uploaded reference photo as the main visual reference.',
-        'Show a detailed cutaway structure with visible internal frame, main power unit, fuel/energy system, cockpit/control unit, structural ribs, mechanical linkages, support components, and labeled parts.',
-        categoryFocus[category],
-        'Composition: vintage engineering poster, front 3/4 view, full object visible, centered, no cropping.',
-        'Style: highly detailed technical illustration, realistic metal texture, parchment background, fine red annotation lines.',
-        'Layout: large title at top left, specifications table, history box, variants/parts diagrams, clean readable labels.',
-        'Labels: use short readable English and Chinese labels for structural and mechanical parts only. Avoid fake letters, unreadable text, nonsense labels, fantasy parts, distorted geometry, weapon callouts, ammunition callouts, and explosive diagrams.',
-        extra ? `Additional user request: ${extra}` : ''
-      ].filter(Boolean).join('\\n');
+        `Find a picture of ${name}. Rotate it to a left-front three-quarter view.`,
+        'The aircraft is viewed from a left-front three-quarter angle, slightly elevated, with the camera looking down at about 30-45 degrees.',
+        'Create a highly detailed military aircraft cutaway poster in the style of vintage technical aviation magazines.',
+        '',
+        'Use the provided aircraft photo as the main reference.',
+        '',
+        'Requirements:',
+        '- horizontal poster layout, 1536 x 1024 aspect ratio',
+        '- realistic mechanical cutaway illustration',
+        '- show internal structure and components',
+        '- vintage aviation infographic style',
+        '- technical arrows and labels',
+        '- bilingual annotations in English and Chinese',
+        '- small typography acceptable',
+        '- dramatic realistic lighting',
+        '- slightly aged paper texture',
+        '- highly detailed engine, cockpit, fuel tanks, internal framework, wing ribs, fuselage frame, landing gear, and control surfaces',
+        '- professional aerospace illustration quality',
+        '- educational museum-style non-operational subject; avoid tactical instructions, explosive diagrams, weapon callouts, ammunition callouts, political symbols, and combat-use diagrams',
+        '',
+        'Top title:',
+        '"English nationality, aircraft name and type" with the aircraft name and type in dark red characters.',
+        '"Chinese nationality, aircraft name and type" with the aircraft name and type in dark red characters.',
+        '',
+        'Small footer text:',
+        '"star-style-studio.net"',
+        '',
+        'Style references:',
+        'History Channel aircraft technical poster',
+        'WW2 military cutaway illustration',
+        'aviation engineering infographic',
+        'retro aerospace magazine layout'
+      ].join('\\n');
+    }
+
+    function buildVehiclePreset(name) {
+      return [
+        `Find a reference picture of ${name}, rotated to a left-front three-quarter view.`,
+        'The tank or vehicle is viewed from a slightly elevated angle, with the camera looking down at about 30-45 degrees.',
+        '',
+        'Create a highly detailed WWII military vehicle cutaway poster in the style of vintage technical military magazines.',
+        '',
+        'Use the provided tank or vehicle photo as the main reference.',
+        '',
+        'Requirements:',
+        '- horizontal poster layout, 1536 x 1024 aspect ratio',
+        '- realistic mechanical cutaway illustration',
+        '- show internal structure and components',
+        '- vintage military engineering infographic style',
+        '- technical arrows and labels',
+        '- bilingual annotations in English and Chinese',
+        '- small typography acceptable',
+        '- dramatic realistic lighting',
+        '- slightly aged paper texture',
+        '- highly detailed turret or cabin, main body structure, engine, transmission, fuel tanks, crew compartment, driver seat, radio, tracks or wheels, road wheels, suspension, armor plates, chassis, and internal framework',
+        '- professional military vehicle illustration quality',
+        '- WWII historical atmosphere, but the vehicle should be the clear central subject',
+        '- educational museum-style non-operational subject; avoid tactical instructions, firing mechanism diagrams, explosive diagrams, ammunition callouts, weapon operation labels, political symbols, and combat-use diagrams',
+        '',
+        'Top title:',
+        '"English nationality, vehicle name and type" with the vehicle name and type in dark red characters.',
+        '"Chinese nationality, vehicle name and type" with the vehicle name and type in dark red characters.',
+        '',
+        'Small footer text:',
+        '"star-style-studio.net"',
+        '',
+        'Style references:',
+        'WWII military cutaway illustration',
+        'vintage tank technical poster',
+        'History Channel military vehicle infographic',
+        'retro armored vehicle magazine layout',
+        'engineering blueprint poster'
+      ].join('\\n');
     }
 
     function buildPresetPromptOnly() {
       const name = objectName.value.trim() || 'World War II aircraft';
+      if (category === 'aircraft') return buildAircraftPreset(name);
+      if (category === 'vehicle') return buildVehiclePreset(name);
       return [
         `Create a premium mechanical cutaway anatomy poster for: ${name}.`,
         `Object category: ${categoryText[category]}.`,
         'Purpose: educational museum-style engineering illustration of a non-operational, demilitarized object.',
-        'Use the provided template image only as a color and layout reference: aged parchment background, black and deep red title typography, muted olive-gray mechanical colors, fine red annotation lines, boxed specification panels, and dense technical-poster composition.',
-        'Do not copy the template aircraft, markings, symbols, weapon labels, ammunition labels, or exact text content.',
         'Use the uploaded reference photo as the main visual reference.',
         'Show a detailed cutaway structure with visible internal frame, main power unit, fuel/energy system, cockpit/control unit, structural ribs, mechanical linkages, support components, and labeled parts.',
         categoryFocus[category],
@@ -450,8 +536,20 @@
       ].filter(Boolean).join('\\n');
     }
 
+    function buildPrompt() {
+      const extra = extraPrompt.value.trim();
+      if (presetInserted && extra) return extra;
+      return [
+        buildPresetPromptOnly(),
+        extra ? `Additional user request:\\n${extra}` : ''
+      ].filter(Boolean).join('\\n\\n');
+    }
+
     function updatePrompt() {
-      promptBox.textContent = buildPrompt();
+      const preset = buildPresetPromptOnly();
+      const summary = preset.replace(/\s+/g, ' ').slice(0, 180);
+      promptSummary.textContent = `预设开头：${summary}${preset.length > 180 ? '...' : ''}（点击展开全文）`;
+      promptBox.textContent = preset;
     }
 
     function setStatus(message, loading = false) {
@@ -475,6 +573,7 @@
       const preset = buildPresetPromptOnly();
       const current = extraPrompt.value.trim();
       extraPrompt.value = current ? `${current}\\n\\n${preset}` : preset;
+      presetInserted = true;
       extraPrompt.focus();
       updatePrompt();
       setStatus('预设 Prompt 已追加到补充要求栏。');
@@ -548,45 +647,6 @@
       };
     }
 
-    async function makeStyleTemplatePayload(file) {
-      const originalDataUrl = await readFileAsDataUrl(file);
-      const img = await loadImage(originalDataUrl);
-      const small = document.createElement('canvas');
-      small.width = 180;
-      small.height = 116;
-      const smallCtx = small.getContext('2d');
-      smallCtx.drawImage(img, 0, 0, small.width, small.height);
-
-      const canvas = document.createElement('canvas');
-      canvas.width = 900;
-      canvas.height = 580;
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = true;
-      ctx.filter = 'blur(10px)';
-      ctx.drawImage(small, 0, 0, canvas.width, canvas.height);
-      ctx.filter = 'none';
-      ctx.fillStyle = 'rgba(235, 224, 204, 0.18)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.78);
-      const approxBytes = Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75);
-      return {
-        dataUrl,
-        mimeType: 'image/jpeg',
-        bytes: approxBytes,
-        originalName: 'style-palette-template.jpg'
-      };
-    }
-
-    async function loadTemplatePayload() {
-      if (templatePayload) return templatePayload;
-      const response = await fetch(TEMPLATE_URL, { cache: 'force-cache' });
-      if (!response.ok) throw new Error(`模板图加载失败 HTTP ${response.status}`);
-      const blob = await response.blob();
-      const file = new File([blob], 'mechanical-poster-template.jpg', { type: blob.type || 'image/jpeg' });
-      templatePayload = await makeStyleTemplatePayload(file);
-      return templatePayload;
-    }
-
     imageInput.addEventListener('change', async () => {
       const file = imageInput.files && imageInput.files[0];
       if (!file) return;
@@ -599,13 +659,20 @@
     chips.forEach((chip) => {
       chip.addEventListener('click', () => {
         category = chip.dataset.category;
+        presetInserted = false;
         chips.forEach((item) => item.classList.toggle('active', item === chip));
         updatePrompt();
       });
     });
 
-    objectName.addEventListener('input', updatePrompt);
-    extraPrompt.addEventListener('input', updatePrompt);
+    objectName.addEventListener('input', () => {
+      presetInserted = false;
+      updatePrompt();
+    });
+    extraPrompt.addEventListener('input', () => {
+      if (!extraPrompt.value.trim()) presetInserted = false;
+      updatePrompt();
+    });
     btnBuildPrompt.addEventListener('click', appendPresetPromptToExtra);
 
     document.querySelectorAll('.plate[data-hd]').forEach((plate) => {
@@ -683,8 +750,7 @@
         setStatus(waitingMessage(startedAt, waitInfo.progress, waitInfo.pollCount, waitInfo.phase), true);
       }, 1000);
       try {
-        const template = category === 'aircraft' ? await loadTemplatePayload() : null;
-        waitInfo.phase = category === 'aircraft' ? '正在提交给 AI模型 / 飞机模板已附带' : '正在提交给 AI模型';
+        waitInfo.phase = '正在提交给 AI模型';
         setStatus(waitingMessage(startedAt, waitInfo.progress, waitInfo.pollCount, waitInfo.phase), true);
         const response = await fetch('/gpt-api/anatomy', {
           method: 'POST',
@@ -694,7 +760,6 @@
             category,
             objectName: objectName.value.trim(),
             prompt: buildPrompt(),
-            ...(template ? { templateImage: template } : {}),
             image: imagePayload
           })
         });
