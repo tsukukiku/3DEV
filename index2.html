@@ -459,6 +459,18 @@
       statusEl.classList.toggle('loading', loading);
     }
 
+    function formatElapsed(ms) {
+      const total = Math.max(0, Math.floor(ms / 1000));
+      const min = String(Math.floor(total / 60)).padStart(2, '0');
+      const sec = String(total % 60).padStart(2, '0');
+      return `${min}:${sec}`;
+    }
+
+    function waitingMessage(startedAt, progress = 10, pollCount = 0, phase = 'AI模型生成中') {
+      const seconds = Math.floor((Date.now() - startedAt) / 1000);
+      return `${phase} ${progress || 10}% / ${seconds}秒 / 查询 ${pollCount} 次。请不要重复提交或关闭页面。`;
+    }
+
     function appendPresetPromptToExtra() {
       const preset = buildPresetPromptOnly();
       const current = extraPrompt.value.trim();
@@ -619,12 +631,12 @@
       if (event.key === 'Escape' && hdViewer.classList.contains('open')) closeHdViewer();
     });
 
-    async function waitForAnatomyJob(jobId) {
-      const startedAt = Date.now();
+    async function waitForAnatomyJob(jobId, startedAt, waitInfo) {
       let softErrorCount = 0;
+      let pollCount = 0;
       while (true) {
         await new Promise((resolve) => setTimeout(resolve, 5000));
-        const seconds = Math.floor((Date.now() - startedAt) / 1000);
+        pollCount += 1;
         try {
           const response = await fetch(`/gpt-api/anatomy-jobs/${encodeURIComponent(jobId)}`, { cache: 'no-store' });
           const text = await response.text();
@@ -632,18 +644,25 @@
           try { job = text ? JSON.parse(text) : {}; } catch (error) { job = {}; }
           if (!response.ok) throw new Error(job.error || job.message || text || `HTTP ${response.status}`);
           softErrorCount = 0;
-          setStatus(`AI模型生成中 ${job.progress || 10}% / ${seconds}秒`, true);
+          waitInfo.phase = 'AI模型生成中';
+          waitInfo.progress = job.progress || 10;
+          waitInfo.pollCount = pollCount;
+          btnSubmit.textContent = `生成中 ${formatElapsed(Date.now() - startedAt)}`;
+          setStatus(waitingMessage(startedAt, waitInfo.progress, waitInfo.pollCount, waitInfo.phase), true);
           if (job.status === 'FINISHED') return job;
           if (job.status === 'FAILED') throw new Error(job.error || 'AI模型生成失败');
         } catch (error) {
           softErrorCount += 1;
           if (softErrorCount >= 5) throw error;
-          setStatus(`状态确认中 ${seconds}秒 / 网络暂时不稳定，继续等待`, true);
+          waitInfo.phase = `网络暂时不稳定，继续等待 ${softErrorCount}/5`;
+          btnSubmit.textContent = `等待中 ${formatElapsed(Date.now() - startedAt)}`;
+          setStatus(`状态确认中 ${formatElapsed(Date.now() - startedAt)} / ${waitInfo.phase}`, true);
         }
       }
     }
 
     btnSubmit.addEventListener('click', async () => {
+      if (btnSubmit.disabled) return;
       if (passcode.value.trim() !== 'ANATOMY') {
         alert('请输入正确口令：ANATOMY');
         return;
@@ -652,11 +671,21 @@
         alert('请先上传物体照片');
         return;
       }
-      setStatus('正在提交给 AI模型', true);
+      const startedAt = Date.now();
+      const originalLabel = btnSubmit.textContent;
+      const waitInfo = { phase: '正在提交/排队', progress: 10, pollCount: 0 };
+      let heartbeat = null;
+      setStatus('正在提交给 AI模型 0秒', true);
       btnSubmit.disabled = true;
+      btnSubmit.textContent = '提交中 00:00';
+      heartbeat = setInterval(() => {
+        btnSubmit.textContent = `生成中 ${formatElapsed(Date.now() - startedAt)}`;
+        setStatus(waitingMessage(startedAt, waitInfo.progress, waitInfo.pollCount, waitInfo.phase), true);
+      }, 1000);
       try {
         const template = category === 'aircraft' ? await loadTemplatePayload() : null;
-        setStatus(category === 'aircraft' ? '正在提交给 AI模型 / 飞机模板已附带' : '正在提交给 AI模型', true);
+        waitInfo.phase = category === 'aircraft' ? '正在提交给 AI模型 / 飞机模板已附带' : '正在提交给 AI模型';
+        setStatus(waitingMessage(startedAt, waitInfo.progress, waitInfo.pollCount, waitInfo.phase), true);
         const response = await fetch('/gpt-api/anatomy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -677,16 +706,20 @@
           const cfCode = cfMatch ? (cfMatch[1] || cfMatch[2]) : '';
           throw new Error(data.error || (cfCode ? `Cloudflare ${cfCode}: Synology API 临时没有回应` : text.slice(0, 180) || `HTTP ${response.status}`));
         }
-        setStatus('已提交，AI模型生成中 0秒', true);
-        const job = data.jobId ? await waitForAnatomyJob(data.jobId) : data;
+        waitInfo.phase = '已提交，AI模型生成中';
+        waitInfo.progress = data.progress || 10;
+        setStatus(waitingMessage(startedAt, waitInfo.progress, waitInfo.pollCount, waitInfo.phase), true);
+        const job = data.jobId ? await waitForAnatomyJob(data.jobId, startedAt, waitInfo) : data;
         const imageUrl = job.imageUrl || job.publicImageUrl || job.url;
         if (!imageUrl) throw new Error('生成完成，但没有返回图片地址');
         resultCard.innerHTML = `<img src="${imageUrl}" alt="生成的机械解剖图">`;
-        setStatus('生成完成。');
+        setStatus(`生成完成。总等待 ${formatElapsed(Date.now() - startedAt)}。`);
       } catch (error) {
-        setStatus(`提交失败：${error.message}`);
+        setStatus(`提交失败：${error.message}。已等待 ${formatElapsed(Date.now() - startedAt)}。`);
       } finally {
+        if (heartbeat) clearInterval(heartbeat);
         btnSubmit.disabled = false;
+        btnSubmit.textContent = originalLabel;
       }
     });
 
